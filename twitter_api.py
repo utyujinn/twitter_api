@@ -7,7 +7,7 @@ import webbrowser
 import requests
 import json
 import argparse
-import time
+from time import time
 
 SCOPES="tweet.read tweet.write tweet.moderate.write users.read follows.read follows.write offline.access space.read mute.read mute.write like.read like.write list.read list.write block.read block.write bookmark.read bookmark.write"
 
@@ -89,10 +89,9 @@ class Twitter_api():
     }
     response=requests.request(method="post",headers=header,url=token_url,params=params)
     response=json.loads(response.text)
-    print(response)
     self.access_token = response["access_token"]
     self.refresh_token = response["refresh_token"]
-    self.expiration_time = response["expires_in"]+time.time()
+    self.expiration_time = response["expires_in"]+time()
     self.save_keys()
     return response
 
@@ -103,6 +102,7 @@ class Twitter_api():
     data = {
       "access_token":self.access_token,
       "refresh_token":self.refresh_token,
+      "client_id":self.client_id,
       "expiration_time":self.expiration_time
     }
     with open(self.key_path, "w", encoding = "utf-8") as f:
@@ -114,8 +114,10 @@ class Twitter_api():
 
     with open(self.key_path, "r", encoding = "utf-8") as f:
       data = json.load(f)
-    
     self.access_token   = data["access_token"]
+    self.refresh_token  = data["refresh_token"]
+    self.client_id      = data["client_id"]
+    self.expiration_token = data["expiration_time"]
 
   def refresh(self)->dict:
     token_url = "https://api.twitter.com/2/oauth2/token"
@@ -127,11 +129,12 @@ class Twitter_api():
       "client_id":self.client_id,
       "grant_type":"refresh_token"
     }
+
     response=requests.request(method="post",headers=header,params=params,url=token_url)
     response = json.loads(response.text)
 
     self.access_token = response["access_token"]
-    self.refresh_token = response["scope"]
+    self.refresh_token = response["refresh_token"]
     self.expiration_time = response["expires_in"] + time()
     self.save_keys()
     return response
