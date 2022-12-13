@@ -29,6 +29,8 @@ if t.expiration_time<=time.time()+60:
 After write this code, you can use below api's.
 
 ### tweet
+`utyu.tweet("text")`
+makes the simple tweet.
 
 ### retweet
 
