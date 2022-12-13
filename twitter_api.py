@@ -7,6 +7,7 @@ import webbrowser
 import requests
 import json
 import argparse
+import time
 
 SCOPES="tweet.read tweet.write tweet.moderate.write users.read follows.read follows.write offline.access space.read mute.read mute.write like.read like.write list.read list.write block.read block.write bookmark.read bookmark.write"
 
@@ -88,8 +89,10 @@ class Twitter_api():
     }
     response=requests.request(method="post",headers=header,url=token_url,params=params)
     response=json.loads(response.text)
-    
-    self.access_token=response["access_token"]
+    print(response)
+    self.access_token = response["access_token"]
+    self.refresh_token = response["refresh_token"]
+    self.expiration_time = response["expires_in"]+time.time()
     self.save_keys()
     return response
 
@@ -99,6 +102,8 @@ class Twitter_api():
 
     data = {
       "access_token":self.access_token,
+      "refresh_token":self.refresh_token,
+      "expiration_time":self.expiration_time
     }
     with open(self.key_path, "w", encoding = "utf-8") as f:
       json.dump(data, f, indent = 2)
@@ -112,6 +117,24 @@ class Twitter_api():
     
     self.access_token   = data["access_token"]
 
+  def refresh(self)->dict:
+    token_url = "https://api.twitter.com/2/oauth2/token"
+    header = {
+      "Content-Type":"application/x-www-form-urlencoded"
+    }
+    params = {
+      "refresh_token":self.refresh_token,
+      "client_id":self.client_id,
+      "grant_type":"refresh_token"
+    }
+    response=requests.request(method="post",headers=header,params=params,url=token_url)
+    response = json.loads(response.text)
+
+    self.access_token = response["access_token"]
+    self.refresh_token = response["scope"]
+    self.expiration_time = response["expires_in"] + time()
+    self.save_keys()
+    return response
 
   #ツイートする
   def tweet(self, text:str)->dict:
