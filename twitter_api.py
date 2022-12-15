@@ -15,37 +15,53 @@ SCOPES="tweet.read tweet.write tweet.moderate.write users.read follows.read foll
 def generate_csrf_token(size:int=64):
   return re.sub('[^a-zA-Z0-9]+','',base64.urlsafe_b64encode(os.urandom(size)).decode("utf-8"))
 
-#引数取得
-def get_args():
-  parser = argparse.ArgumentParser()
-  parser.add_argument("-id", type=str, required=False, help="username")
-  args = parser.parse_args()
-
-  my_dict = dict()
-  if args.id == None:
-    args.id = "key"
-  #id -> key_path : id.json
-  my_dict["key_path"] = args.id + ".json"
-  return my_dict
-
 class Twitter_api():
 
   #初期化処理
-  def __init__(self,consumer_key:str=None,consumer_secret:str=None,client_id:str=None,
-  client_secret:str=None,app_name:str=None,access_token:str=None,refresh_token:str=None,
-  scopes:str=SCOPES,redirect_uri:str="http://localhost:8080",key_path:str="key.json") -> None:
+  def __init__(self) -> None:
 
-    self.consumer_key     = consumer_key
-    self.consumer_secret  = consumer_secret
-    self.client_id        = client_id
-    self.client_secret    = client_secret
-    self.app_name         = app_name
-    self.redirect_uri     = redirect_uri
-    self.access_token     = access_token
-    self.refresh_token    = refresh_token
-    self.expiration_time  = 0
-    self.scope            = scopes
-    self.key_path         = key_path
+    self.scope = SCOPES
+    with open("users.json", "r", encoding = "utf-8") as f:
+      data = json.load(f)
+    self.username = data["default"]
+    
+    with open("key.json", "r", encoding = "utf-8") as f:
+      data = json.load(f)
+    if self.username in data:
+      self.load_keys()
+    else:
+      return
+
+    if self.expiration_time <= time()+60:
+      self.refresh()
+
+
+  #ユーザー情報の登録
+  def add_user(self):
+    code_verifier = generate_csrf_token()
+    print(self.generate_authorization_url(code_verifier = code_verifier)+"\n")
+
+    redirected_url = input("redirected url?\n")
+    print()
+    print(self.access_token_request(code_verifier = code_verifier, redirected_url = redirected_url))
+
+    with open("users.json", "r", encoding = "utf-8") as f:
+      data = json.load(f)
+    
+    tmp = {
+      "access_token":self.access_token,
+      "refresh_token":self.refresh_token,
+      "client_id":self.client_id,
+      "expiration_time":self.expiration_time
+    }
+    
+    with open('key.json', 'r') as f:
+      data = json.load(f)
+
+    data["users"] = data["users"]+[self.username]
+    data["default"] = self.username
+    with open("key.json", "w", encoding = "utf-8") as f:
+      json.dump(data, f, indent = 2)
 
 
   #アプリの認証urlを生成し、ブラウザで開く
@@ -99,26 +115,34 @@ class Twitter_api():
   #トークンを保存 access_token_request内で呼び出される。
   def save_keys(self)->None:
 
-    data = {
+    tmp = {
       "access_token":self.access_token,
       "refresh_token":self.refresh_token,
       "client_id":self.client_id,
       "expiration_time":self.expiration_time
     }
-    with open(self.key_path, "w", encoding = "utf-8") as f:
+    
+    with open('key.json', 'r') as f:
+      data = json.load(f)
+
+    data[self.username] = tmp
+
+    with open("key.json", "w", encoding = "utf-8") as f:
       json.dump(data, f, indent = 2)
-      
+
 
   #トークンを読み込む
   def load_keys(self)->None:
 
-    with open(self.key_path, "r", encoding = "utf-8") as f:
+    with open("key.json", "r", encoding = "utf-8") as f:
       data = json.load(f)
-    self.access_token   = data["access_token"]
-    self.refresh_token  = data["refresh_token"]
-    self.client_id      = data["client_id"]
-    self.expiration_token = data["expiration_time"]
+    self.access_token     = data[self.username]["access_token"]
+    self.refresh_token    = data[self.username]["refresh_token"]
+    self.client_id        = data[self.username]["client_id"]
+    self.expiration_time  = data[self.username]["expiration_time"]
 
+
+  #トークンのリフレッシュを行う。
   def refresh(self)->dict:
     token_url = "https://api.twitter.com/2/oauth2/token"
     header = {
@@ -139,6 +163,7 @@ class Twitter_api():
     self.save_keys()
     return response
 
+
   #ツイートする
   def tweet(self, text:str)->dict:
 
@@ -151,5 +176,24 @@ class Twitter_api():
     data.setdefault("text", text)
 
     response = requests.request(method = "post", headers = header, url = endpoint_url, json = data)
+    response = json.loads(response.text)
+    return response
+
+
+  #ツイートを取得する
+  def get_tweet(self, id:str = None)->dict:
+    if id == None:
+      id = self.id
+    endpoint_url = "https://api.twitter.com/2/tweets"
+
+  #useridを取得する
+  def get_userid(self, username:str)->dict:
+    
+    endpoint_url = "https://api.twitter.com/2/users/" + username
+    header = {
+      "Authorization":"Bearer " + self.access_token
+    }
+
+    response = requests.request(method = "post", headers = header, url = endpoint_url)
     response = json.loads(response.text)
     return response
