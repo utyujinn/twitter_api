@@ -25,10 +25,10 @@ def reset_data():
     "users": []
   }
   
-  with open("users.json", "w", encoding = "utf-8") as f:
+  with open("data/users.json", "w", encoding = "utf-8") as f:
     json.dump(data, f, indent = 2)
   data = {}
-  with open("key.json", "w", encoding = "utf-8") as f:
+  with open("data/key.json", "w", encoding = "utf-8") as f:
     json.dump(data, f, indent = 2)
 
 class Twitter_api():
@@ -37,11 +37,11 @@ class Twitter_api():
   def __init__(self) -> None:
 
     self.scope = SCOPES
-    with open("users.json", "r", encoding = "utf-8") as f:
+    with open("data/users.json", "r", encoding = "utf-8") as f:
       data = json.load(f)
     self.username = data["default"]
     
-    with open("key.json", "r", encoding = "utf-8") as f:
+    with open("data/key.json", "r", encoding = "utf-8") as f:
       data = json.load(f)
     if self.username in data:
       self.load_keys()
@@ -61,18 +61,18 @@ class Twitter_api():
     print()
     print(self.access_token_request(code_verifier = code_verifier, redirected_url = redirected_url))
 
-    with open("users.json", "r", encoding = "utf-8") as f:
+    with open("data/users.json", "r", encoding = "utf-8") as f:
       data = json.load(f)
     if not self.username in data["users"]:
       data["users"] = data["users"]+[self.username]
     data["default"] = self.username
-    with open("users.json", "w", encoding = "utf-8") as f:
+    with open("data/users.json", "w", encoding = "utf-8") as f:
       json.dump(data, f, indent = 2)
 
 
   def change_user(self):
 
-    with open('users.json', 'r') as f:
+    with open('data/users.json', 'r') as f:
       data = json.load(f)
 
     print("current user:"+data["default"])
@@ -86,12 +86,13 @@ class Twitter_api():
 
     j = 0
     for i in data["users"]:
+      print(i + str(j) + str(x))
       if x == j:
         data["default"] = i
         break
-        j = j + 1
+      j = j + 1
 
-    with open("users.json", "w", encoding = "utf-8") as f:
+    with open("data/users.json", "w", encoding = "utf-8") as f:
       json.dump(data, f, indent = 2)
 
     print("changed to " + data["default"])
@@ -156,19 +157,19 @@ class Twitter_api():
       "expiration_time":self.expiration_time
     }
     
-    with open('key.json', 'r') as f:
+    with open('data/key.json', 'r') as f:
       data = json.load(f)
 
     data[self.username] = tmp
 
-    with open("key.json", "w", encoding = "utf-8") as f:
+    with open("data/key.json", "w", encoding = "utf-8") as f:
       json.dump(data, f, indent = 2)
 
 
   #トークンを読み込む
   def load_keys(self)->None:
 
-    with open("key.json", "r", encoding = "utf-8") as f:
+    with open("data/key.json", "r", encoding = "utf-8") as f:
       data = json.load(f)
     self.access_token     = data[self.username]["access_token"]
     self.refresh_token    = data[self.username]["refresh_token"]
