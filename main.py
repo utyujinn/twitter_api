@@ -2,4 +2,7 @@ import twitter_api as twi
 
 utyu = twi.Twitter_api()
 
-print(utyu.tweet("にゃーん"))
+tweets = utyu.get_tweet()
+
+for i in tweets["data"]:
+  print(i)

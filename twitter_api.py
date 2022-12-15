@@ -143,8 +143,23 @@ class Twitter_api():
     self.access_token = response["access_token"]
     self.refresh_token = response["refresh_token"]
     self.expiration_time = response["expires_in"]+time()
+    self.id = self.get_userid()
     self.save_keys()
     return response
+
+
+  #useridを取得する
+  def get_userid(self, username:str = None)->dict:
+    if username == None:
+      username = self.username
+    endpoint_url = "https://api.twitter.com/2/users/by/username/" + username
+    header = {
+      "Authorization":"Bearer " + self.access_token
+    }
+
+    response = requests.request(method = "get", headers = header, url = endpoint_url)
+    response = json.loads(response.text)
+    return response["data"]["id"]
 
 
   #トークンを保存 access_token_request内で呼び出される。
@@ -154,7 +169,8 @@ class Twitter_api():
       "access_token":self.access_token,
       "refresh_token":self.refresh_token,
       "client_id":self.client_id,
-      "expiration_time":self.expiration_time
+      "expiration_time":self.expiration_time,
+      "id":self.id
     }
     
     with open('data/key.json', 'r') as f:
@@ -175,6 +191,7 @@ class Twitter_api():
     self.refresh_token    = data[self.username]["refresh_token"]
     self.client_id        = data[self.username]["client_id"]
     self.expiration_time  = data[self.username]["expiration_time"]
+    self.id = data[self.username]["id"]
 
 
   #トークンのリフレッシュを行う。
@@ -216,19 +233,15 @@ class Twitter_api():
 
 
   #ツイートを取得する
-  def get_tweet(self, id:str = None)->dict:
-    if id == None:
-      id = self.id
-    endpoint_url = "https://api.twitter.com/2/tweets"
-
-  #useridを取得する
-  def get_userid(self, username:str)->dict:
-    
-    endpoint_url = "https://api.twitter.com/2/users/" + username
+  def get_tweet(self, username:str = None)->dict:
+    if username == None:
+      username = self.username
+    endpoint_url = "https://api.twitter.com/2/users/{}/tweets".format(self.id)
     header = {
-      "Authorization":"Bearer " + self.access_token
+      "Authorization":"Bearer " + self.access_token,
     }
-
-    response = requests.request(method = "post", headers = header, url = endpoint_url)
+    response = requests.request(method = "get", headers = header, url = endpoint_url)
     response = json.loads(response.text)
     return response
+
+  
