@@ -232,6 +232,26 @@ class Twitter_api():
     return response
 
 
+#リプライする
+  def reply(self, text:str, id:str)->dict:
+
+    endpoint_url = "https://api.twitter.com/2/tweets"
+    header = {
+      "Authorization":"Bearer " + self.access_token,
+      "Content-type":"application/json"
+    }
+    data = {
+      "text" : text,
+      "reply" : {
+        "in_reply_to_tweet_id" : id
+      }
+    }
+    print(data)
+    response = requests.request(method = "post", headers = header, url = endpoint_url, json = data)
+    response = json.loads(response.text)
+    return response
+
+
   #ツイートを取得する
   def get_tweet(self, username:str = None)->dict:
     if username == None:
@@ -244,4 +264,13 @@ class Twitter_api():
     response = json.loads(response.text)
     return response
 
-  
+
+  #メンションされたツイートを検出
+  def mentioned_tweet(self)->dict:
+    endpoint_url = "https://api.twitter.com/2/users/{}/mentions".format(self.id)
+    header = {
+      "Authorization":"Bearer " + self.access_token,
+    }
+    response = requests.request(method = "get", headers = header, url = endpoint_url)
+    response = json.loads(response.text)
+    return response
