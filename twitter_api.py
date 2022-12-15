@@ -15,6 +15,22 @@ SCOPES="tweet.read tweet.write tweet.moderate.write users.read follows.read foll
 def generate_csrf_token(size:int=64):
   return re.sub('[^a-zA-Z0-9]+','',base64.urlsafe_b64encode(os.urandom(size)).decode("utf-8"))
 
+def reset_data():
+  print("This command will remove your user data\nIs it Ok?(y/n)")
+  flag = input()
+  if flag != "y":
+    return
+  data = {
+    "default": "",
+    "users": []
+  }
+  
+  with open("users.json", "w", encoding = "utf-8") as f:
+    json.dump(data, f, indent = 2)
+  data = {}
+  with open("key.json", "w", encoding = "utf-8") as f:
+    json.dump(data, f, indent = 2)
+
 class Twitter_api():
 
   #初期化処理
@@ -47,22 +63,40 @@ class Twitter_api():
 
     with open("users.json", "r", encoding = "utf-8") as f:
       data = json.load(f)
-    
-    tmp = {
-      "access_token":self.access_token,
-      "refresh_token":self.refresh_token,
-      "client_id":self.client_id,
-      "expiration_time":self.expiration_time
-    }
-    
-    with open('key.json', 'r') as f:
-      data = json.load(f)
-
-    data["users"] = data["users"]+[self.username]
+    if not self.username in data["users"]:
+      data["users"] = data["users"]+[self.username]
     data["default"] = self.username
-    with open("key.json", "w", encoding = "utf-8") as f:
+    with open("users.json", "w", encoding = "utf-8") as f:
       json.dump(data, f, indent = 2)
 
+
+  def change_user(self):
+
+    with open('users.json', 'r') as f:
+      data = json.load(f)
+
+    print("current user:"+data["default"])
+
+    j = 0
+    for i in data["users"]:
+      print(str(j) + ":" + i)
+      j = j + 1
+
+    x = int(input("Please input number:"))
+
+    j = 0
+    for i in data["users"]:
+      if x == j:
+        data["default"] = i
+        break
+        j = j + 1
+
+    with open("users.json", "w", encoding = "utf-8") as f:
+      json.dump(data, f, indent = 2)
+
+    print("changed to " + data["default"])
+    self.username = data["default"]
+    self.load_keys()
 
   #アプリの認証urlを生成し、ブラウザで開く
   def generate_authorization_url(self, code_verifier:str)->str:
