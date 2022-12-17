@@ -232,6 +232,26 @@ class Twitter_api():
     return response
 
 
+#リプライする
+  def reply(self, text:str, id:str)->dict:
+
+    endpoint_url = "https://api.twitter.com/2/tweets"
+    header = {
+      "Authorization":"Bearer " + self.access_token,
+      "Content-type":"application/json"
+    }
+    data = {
+      "text" : text,
+      "reply" : {
+        "in_reply_to_tweet_id" : id
+      }
+    }
+    print(data)
+    response = requests.request(method = "post", headers = header, url = endpoint_url, json = data)
+    response = json.loads(response.text)
+    return response
+
+
   #ツイートを取得する
   def get_tweet(self, username:str = None)->dict:
     if username == None:
@@ -244,4 +264,31 @@ class Twitter_api():
     response = json.loads(response.text)
     return response
 
+
+  #メンションされたツイートを検出
+  def mentioned_tweet(self)->dict:
+    endpoint_url = "https://api.twitter.com/2/users/{}/mentions".format(self.id)
+    header = {
+      "Authorization":"Bearer " + self.access_token,
+    }
+    response = requests.request(method = "get", headers = header, url = endpoint_url)
+    response = json.loads(response.text)
+    return response
   
+
+  def upload_image(self,image_path:str)->dict:
+
+    url = "https://upload.twitter.com/1.1/media/upload.json"
+    headers = {
+      "Authorization": "Bearer " + self.access_token,
+      "Content-Type": "application/x-www-form-urlencoded",
+    }
+    with open(image_path, "rb") as f:
+      file = base64.b64encode(f.read())
+    
+    data = {"media_data" : file}
+
+    response = requests.request(method = "post", url = url, headers=headers, data = data)
+    response = json.loads(response.text)
+    media_id = response["media_id"]
+    print("画像の ID: {}".format(media_id))
