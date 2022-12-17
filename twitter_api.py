@@ -274,3 +274,21 @@ class Twitter_api():
     response = requests.request(method = "get", headers = header, url = endpoint_url)
     response = json.loads(response.text)
     return response
+  
+
+  def upload_image(self,image_path:str)->dict:
+
+    url = "https://upload.twitter.com/1.1/media/upload.json"
+    headers = {
+      "Authorization": "Bearer " + self.access_token,
+      "Content-Type": "application/x-www-form-urlencoded",
+    }
+    with open(image_path, "rb") as f:
+      file = base64.b64encode(f.read())
+    
+    data = {"media_data" : file}
+
+    response = requests.request(method = "post", url = url, headers=headers, data = data)
+    response = json.loads(response.text)
+    media_id = response["media_id"]
+    print("画像の ID: {}".format(media_id))
